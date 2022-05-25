@@ -2,10 +2,13 @@
 
 using namespace ariel;
 
-OrgChart::Tree* OrgChart::Tree::find(const string& father){
+OrgChart::Tree* OrgChart::Tree::find(const string& name){
     Tree* current = this;
+    if (current->name == name){
+        return current;
+    }
     while(current->next_level_order != nullptr){
-        if (current->next_level_order->name == father){
+        if (current->next_level_order->name == name){
             return current->next_level_order;
         }
         current = current->next_level_order;
@@ -13,10 +16,13 @@ OrgChart::Tree* OrgChart::Tree::find(const string& father){
     throw invalid_argument("Father does not exist!");
 }
 
-OrgChart::Tree& OrgChart::Tree::add_node(const string& father, const string child){
+OrgChart::Tree& OrgChart::Tree::add_node(const string& father, const string& child){
     Tree* father_node = find(father);
     Tree child_node = Tree(child, father_node);
-    vector<Tree*> uncles = father_node->father->children;
+    vector<Tree*> uncles;
+    if (father_node->father != nullptr){
+        uncles = father_node->father->children;
+    }
     //no brothers
     if (father_node->children.empty()){
         //level order
@@ -34,12 +40,8 @@ OrgChart::Tree& OrgChart::Tree::add_node(const string& father, const string chil
         }
         if (right_cousin == nullptr){
             child_node.next_level_order = nullptr;
-            Tree* current = this;
-            while (current->next_level_order != nullptr){
-                current = current->next_level_order;
-            }
-            child_node.prev_level_order = current;
-            current->next_level_order = &child_node;
+            child_node.prev_level_order = father_node;
+            father_node->next_level_order = &child_node;
         }
         else{
             child_node.next_level_order = right_cousin;
@@ -116,16 +118,22 @@ OrgChart::Tree& OrgChart::Tree::add_node(const string& father, const string chil
                 current = current->next_level_order;
             }
         }
-
-        child_node.next_preorder = right_uncle;
-        child_node.prev_preorder = right_uncle->prev_preorder;
-        right_uncle->prev_preorder = &child_node;
+        else{
+            child_node.next_preorder = right_uncle;
+            child_node.prev_preorder = right_uncle->prev_preorder;
+            right_uncle->prev_preorder = &child_node;
+        }
     }
     father_node->children.push_back(&child_node);
+    return *this;
 }
 
-string OrgChart::Tree::get_name(){
+string& OrgChart::Tree::get_name(){
     return name;
+}
+
+void OrgChart::Tree::set_name(string new_name){
+    name = move(new_name);
 }
 
 OrgChart::Tree* OrgChart::Tree::get_next_level_order(){
@@ -142,6 +150,18 @@ OrgChart::Tree* OrgChart::Tree::get_prev_reverse_order(){
 
 OrgChart::Tree* OrgChart::Tree::get_next_preorder(){
     return next_preorder;
+}
+
+size_t OrgChart::Tree::size() const{
+    return name.size();
+}
+
+int OrgChart::Tree::length() const{
+    return (int)name.size();
+}
+
+char OrgChart::Tree::at(unsigned int index) const{
+    return name.at(index);
 }
 
 OrgChart::Iterator& OrgChart::Iterator::operator++(){
@@ -165,6 +185,10 @@ OrgChart::Tree* OrgChart::Iterator::operator->(){
     return current;
 }
 
+string& OrgChart::Iterator::operator*(){
+    return current->get_name();
+}
+
 bool OrgChart::Iterator::operator==(const Iterator& it){
     return current == it.current;
 }
@@ -173,25 +197,34 @@ bool OrgChart::Iterator::operator!=(const Iterator& it){
     return !(*this==it);
 }
 
-OrgChart& OrgChart::add_root(const string name){
+OrgChart& OrgChart::add_root(const string& name){
     root.set_name(name);
     return *this;
 }
 
-OrgChart& OrgChart::add_sub(const string& father, const string child){
+OrgChart& OrgChart::add_sub(const string& father, const string& child){
     root.add_node(father, child);
     return *this;
 }
 
 OrgChart::Iterator OrgChart::begin_level_order(){
+    if (root.size() == 0){
+        throw invalid_argument("No elements!");
+    }
     return Iterator(&root, LEVEL_ORDER);
 }
 
-OrgChart::Iterator OrgChart::end_level_order(){
+OrgChart::Iterator OrgChart::end_level_order() const{
+    if (root.size() == 0){
+        throw invalid_argument("No elements!");
+    }
     return Iterator(nullptr, LEVEL_ORDER);
 }
 
 OrgChart::Iterator OrgChart::begin_reverse_order(){
+    if (root.size() == 0){
+        throw invalid_argument("No elements!");
+    }
     Tree* current = &root;
     while (current->get_next_level_order() != nullptr){
         if (current->get_prev_reverse_order() == nullptr){
@@ -201,15 +234,24 @@ OrgChart::Iterator OrgChart::begin_reverse_order(){
     throw invalid_argument("This shouldn't appear");
 }
 
-OrgChart::Iterator OrgChart::end_reverse_order(){
+OrgChart::Iterator OrgChart::reverse_order() const{ //end_reverse_order
+    if (root.size() == 0){
+        throw invalid_argument("No elements!");
+    }
     return Iterator(nullptr, REVERSE_ORDER);
 }
 
 OrgChart::Iterator OrgChart::begin_preorder(){
+    if (root.size() == 0){
+        throw invalid_argument("No elements!");
+    }
     return Iterator(&root, PREORDER);
 }
 
-OrgChart::Iterator OrgChart::end_preorder(){
+OrgChart::Iterator OrgChart::end_preorder() const{
+    if (root.size() == 0){
+        throw invalid_argument("No elements!");
+    }
     return Iterator(nullptr, PREORDER);
 }
 
@@ -217,6 +259,27 @@ OrgChart::Iterator OrgChart::begin(){
     return begin_level_order();
 }
 
-OrgChart::Iterator OrgChart::end(){
+OrgChart::Iterator OrgChart::end() const{
     return end_level_order();
+}
+
+string OrgChart::to_string(){
+    string string_builder;
+    Tree* current = &root;
+    string_builder.append(current->get_name());
+    cout << current->get_name() << endl;
+    while (current->get_next_level_order() != nullptr){
+        string_builder.append(", ");
+        string_builder.append(current->get_next_level_order()->get_name());
+        cout << current->get_next_level_order()->get_name() << endl;
+        current = current->get_next_level_order();
+    }
+    string_builder.append("\n");
+    return string_builder;
+}
+
+ostream& ariel::operator<<(ostream& os, OrgChart& orgchart){
+    string s = orgchart.to_string();
+    os << orgchart.to_string();
+    return os;
 }
