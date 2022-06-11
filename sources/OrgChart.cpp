@@ -3,7 +3,7 @@
 using namespace ariel;
 
 OrgChart::Tree* OrgChart::Tree::find(const string& name){
-    if (name.empty()){
+    if (this->name.empty()){
         throw invalid_argument("can't add sub before root");
     }
     Tree* current = this;
