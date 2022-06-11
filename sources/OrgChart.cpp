@@ -22,14 +22,28 @@ void OrgChart::Tree::insert(Tree* node, Order order){
             next_level_order = node->next_level_order;
             prev_level_order = node;
             node->next_level_order = this;
+            if (next_level_order != nullptr){
+                next_level_order->prev_level_order = this;
+            }
+            break;
         case(REVERSE_ORDER):
             prev_reverse_order = node->prev_reverse_order;
             next_reverse_order = node;
             node->prev_reverse_order = this;
+            if (prev_reverse_order != nullptr){
+                prev_reverse_order->next_reverse_order = this;
+            }
+            break;
         case(PREORDER):
             next_preorder = node->next_preorder;
             prev_preorder = node;
             node->next_preorder = this;
+            if (next_preorder != nullptr){
+                next_preorder->prev_preorder = this;
+            }
+            break;
+        default:
+            break;
     }
 }
 
@@ -37,33 +51,13 @@ void OrgChart::Tree::add_sub(const string& child){
     Tree* child_node = new Tree(child, this);
     child_node->level = level+1;
 
-    //level order
-    if (!children.empty()){
-        child_node->insert(children.back(), LEVEL_ORDER);
-    }
-    else{
-        Tree* uncle = prev_level_order; //get closest left node with father's level and child
-        while (uncle != nullptr && uncle->level == level){
-            if (!uncle->children.empty()){
-                child_node->insert(uncle->children.back(), LEVEL_ORDER);
-                break;
-            }
-            uncle = uncle->prev_level_order;
-        }
-        if (uncle == nullptr || uncle->level != level){
-            uncle = this; //get rightmost node with father's level (could be father)
-            while (uncle->next_level_order != nullptr && uncle->next_level_order->level == level){
-                uncle = uncle->next_level_order;
-            }
-            child_node->insert(uncle, LEVEL_ORDER);
-        }
-    }
+    //since I'm checking everything using level order, I will update it last.
 
     //reverse order
     Tree* uncle = next_level_order; //get closest right node with father's level and child
     while (uncle != nullptr && uncle->level == level){
         if (!uncle->children.empty()){
-            child_node->insert(uncle, REVERSE_ORDER);
+            child_node->insert(uncle->children.at(0), REVERSE_ORDER);
             break;
         }
         uncle = uncle->next_level_order;
@@ -86,6 +80,28 @@ void OrgChart::Tree::add_sub(const string& child){
             prev_node = prev_node->children.back();
         }
         child_node->insert(prev_node, PREORDER);
+    }
+
+    //level order
+    if (!children.empty()){
+        child_node->insert(children.back(), LEVEL_ORDER);
+    }
+    else{
+        Tree* uncle = prev_level_order; //get closest left node with father's level and child
+        while (uncle != nullptr && uncle->level == level){
+            if (!uncle->children.empty()){
+                child_node->insert(uncle->children.back(), LEVEL_ORDER);
+                break;
+            }
+            uncle = uncle->prev_level_order;
+        }
+        if (uncle == nullptr || uncle->level != level){
+            uncle = this; //get rightmost node with father's level (could be father)
+            while (uncle->next_level_order != nullptr && uncle->next_level_order->level == level){
+                uncle = uncle->next_level_order;
+            }
+            child_node->insert(uncle, LEVEL_ORDER);
+        }
     }
 
     children.push_back(child_node);
