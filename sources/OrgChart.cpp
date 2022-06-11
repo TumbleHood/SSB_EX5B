@@ -3,129 +3,92 @@
 using namespace ariel;
 
 OrgChart::Tree* OrgChart::Tree::find(const string& name){
-    Tree* current = this;
-    if (current->name == name){
-        return current;
+    if (this->name == ""){
+        throw invalid_argument("can't add sub before root");
     }
-    while(current->next_level_order != nullptr){
-        if (current->next_level_order->name == name){
-            return current->next_level_order;
+    Tree* current = this;
+    while(current != nullptr){
+        if (current->name == name){
+            return current;
         }
         current = current->next_level_order;
     }
-    throw invalid_argument("Father does not exist!");
+    throw invalid_argument("employer doesn't exist");
 }
 
-OrgChart::Tree& OrgChart::Tree::add_node(const string& father, const string& child){
-    Tree* father_node = find(father);
-    Tree child_node = Tree(child, father_node);
-    vector<Tree*> uncles;
-    if (father_node->father != nullptr){
-        uncles = father_node->father->children;
+void OrgChart::Tree::insert(Tree* node, Order order){
+    switch(order){
+        case(LEVEL_ORDER):
+            next_level_order = node->next_level_order;
+            prev_level_order = node;
+            node->next_level_order = this;
+        case(REVERSE_ORDER):
+            prev_reverse_order = node->prev_reverse_order;
+            next_reverse_order = node;
+            node->prev_reverse_order = this;
+        case(PREORDER):
+            next_preorder = node->next_preorder;
+            prev_preorder = node;
+            node->next_preorder = this;
     }
-    //no brothers
-    if (father_node->children.empty()){
-        //level order
-        Tree* right_cousin = nullptr;
-        for (unsigned int i = 0; i < uncles.size(); i++){
-            if (uncles.at(i) == father_node){
-                for (unsigned int j = i+1; j < uncles.size(); j++){
-                    if (!uncles.at(j)->children.empty()){
-                        right_cousin = uncles.at(j)->children.at(0);
-                        break;
-                    }
-                }
-                break;
-            }
-        }
-        if (right_cousin == nullptr){
-            child_node.next_level_order = nullptr;
-            child_node.prev_level_order = father_node;
-            father_node->next_level_order = &child_node;
-        }
-        else{
-            child_node.next_level_order = right_cousin;
-            child_node.prev_level_order = right_cousin->prev_level_order;
-            right_cousin->next_level_order = &child_node;
-        }
+}
 
-        //reverse level order
-        if (right_cousin == nullptr){
-            for (unsigned int i = 0; i < uncles.size(); i++){
-                if (uncles.at(i) == father_node){
-                    Tree* current = this;
-                    while (current->next_level_order != nullptr){
-                        if (current->prev_reverse_order == nullptr){
-                            child_node.next_reverse_order = current;
-                            current->prev_reverse_order = &child_node;
-                            break;
-                        }
-                        current = current->next_level_order;
-                    }
-                    break;
-                }
-                if (!uncles.at(i)->children.empty()){
-                    Tree* current_cousin = uncles.at(i)->children.back();
-                    if (current_cousin->next_reverse_order == uncles.at(0)){
-                        child_node.next_reverse_order = current_cousin->next_reverse_order;
-                        child_node.prev_reverse_order = current_cousin;
-                        current_cousin->next_reverse_order = &child_node;
-                    }
-                }
-            }
-        }
-        else{
-            child_node.next_reverse_order = right_cousin;
-            child_node.prev_reverse_order = right_cousin->prev_reverse_order;
-            right_cousin->prev_reverse_order = &child_node;
-        }
+void OrgChart::Tree::add_sub(const string& child){
+    Tree* child_node = new Tree(child, this);
+    child_node->level = level+1;
 
-        //preorder
-        child_node.prev_preorder = father_node;
-        child_node.next_preorder = father_node->next_preorder;
-        father_node->next_preorder = &child_node;
+    //level order
+    if (!children.empty()){
+        child_node->insert(children.back(), LEVEL_ORDER);
     }
-    //there are brothers
     else{
-        //level order
-        child_node.prev_level_order = father_node->children.back();
-        child_node.next_level_order = child_node.prev_level_order->next_level_order;
-        child_node.prev_level_order->next_level_order = &child_node;
-
-        //reverse level order
-        child_node.prev_reverse_order = father_node->children.back();
-        child_node.next_reverse_order = child_node.prev_reverse_order->next_reverse_order;
-        child_node.prev_reverse_order->next_reverse_order = &child_node;
-
-        //preorder
-        Tree* right_uncle = nullptr;
-        for (unsigned int i = 0; i < uncles.size(); i++){
-            if (uncles.at(i) == father_node){
-                right_uncle = uncles.at(i+1);
+        Tree* uncle = prev_level_order; //get closest left node with father's level and child
+        while (uncle != nullptr && uncle->level == level){
+            if (!uncle->children.empty()){
+                child_node->insert(uncle->children.back(), LEVEL_ORDER);
                 break;
             }
+            uncle = uncle->prev_level_order;
         }
-
-        if (right_uncle == nullptr){
-            child_node.next_preorder = nullptr;
-            Tree* current = this;
-            while (current->next_level_order != nullptr){
-                if (current->next_preorder == nullptr){
-                    child_node.prev_preorder = current;
-                    current->next_preorder = &child_node;
-                    break;
-                }
-                current = current->next_level_order;
+        if (uncle == nullptr || uncle->level != level){
+            uncle = this; //get rightmost node with father's level (could be father)
+            while (uncle->next_level_order != nullptr && uncle->next_level_order->level == level){
+                uncle = uncle->next_level_order;
             }
-        }
-        else{
-            child_node.next_preorder = right_uncle;
-            child_node.prev_preorder = right_uncle->prev_preorder;
-            right_uncle->prev_preorder = &child_node;
+            child_node->insert(uncle, LEVEL_ORDER);
         }
     }
-    father_node->children.push_back(&child_node);
-    return *this;
+
+    //reverse order
+    Tree* uncle = next_level_order; //get closest right node with father's level and child
+    while (uncle != nullptr && uncle->level == level){
+        if (!uncle->children.empty()){
+            child_node->insert(uncle, REVERSE_ORDER);
+            break;
+        }
+        uncle = uncle->next_level_order;
+    }
+    if (uncle == nullptr || uncle->level != level){
+        uncle = this; //get leftmost node with father's level (could be father)
+        while (uncle->prev_level_order != nullptr && uncle->prev_level_order->level == level){
+            uncle = uncle->prev_level_order;
+        }
+        child_node->insert(uncle, REVERSE_ORDER);
+    }
+
+    //preorder
+    if (children.empty()){
+        child_node->insert(this, PREORDER);
+    }
+    else{
+        Tree* prev_node = children.back();
+        while (!prev_node->children.empty()){
+            prev_node = prev_node->children.back();
+        }
+        child_node->insert(prev_node, PREORDER);
+    }
+
+    children.push_back(child_node);
 }
 
 string& OrgChart::Tree::get_name(){
@@ -189,12 +152,12 @@ string& OrgChart::Iterator::operator*(){
     return current->get_name();
 }
 
-bool OrgChart::Iterator::operator==(const Iterator& it){
+bool OrgChart::Iterator::operator==(const Iterator& it) const{
     return current == it.current;
 }
 
-bool OrgChart::Iterator::operator!=(const Iterator& it){
-    return !(*this==it);
+bool OrgChart::Iterator::operator!=(const Iterator& it) const{
+    return !(current == it.current);
 }
 
 OrgChart& OrgChart::add_root(const string& name){
@@ -203,54 +166,57 @@ OrgChart& OrgChart::add_root(const string& name){
 }
 
 OrgChart& OrgChart::add_sub(const string& father, const string& child){
-    root.add_node(father, child);
+    Tree* father_node = root.find(father);
+    father_node->add_sub(child);
+
     return *this;
 }
 
 OrgChart::Iterator OrgChart::begin_level_order(){
     if (root.size() == 0){
-        throw invalid_argument("No elements!");
+        throw invalid_argument("chart is empty!");
     }
     return Iterator(&root, LEVEL_ORDER);
 }
 
 OrgChart::Iterator OrgChart::end_level_order() const{
     if (root.size() == 0){
-        throw invalid_argument("No elements!");
+        throw invalid_argument("chart is empty!");
     }
     return Iterator(nullptr, LEVEL_ORDER);
 }
 
 OrgChart::Iterator OrgChart::begin_reverse_order(){
     if (root.size() == 0){
-        throw invalid_argument("No elements!");
+        throw invalid_argument("chart is empty!");
     }
     Tree* current = &root;
-    while (current->get_next_level_order() != nullptr){
+    while (current != nullptr){
         if (current->get_prev_reverse_order() == nullptr){
             return Iterator(current, REVERSE_ORDER);
         }
+        current = current->get_next_level_order();
     }
-    throw invalid_argument("This shouldn't appear");
+    return Iterator(nullptr, REVERSE_ORDER);
 }
 
 OrgChart::Iterator OrgChart::reverse_order() const{ //end_reverse_order
     if (root.size() == 0){
-        throw invalid_argument("No elements!");
+        throw invalid_argument("chart is empty!");
     }
     return Iterator(nullptr, REVERSE_ORDER);
 }
 
 OrgChart::Iterator OrgChart::begin_preorder(){
     if (root.size() == 0){
-        throw invalid_argument("No elements!");
+        throw invalid_argument("chart is empty!");
     }
     return Iterator(&root, PREORDER);
 }
 
 OrgChart::Iterator OrgChart::end_preorder() const{
     if (root.size() == 0){
-        throw invalid_argument("No elements!");
+        throw invalid_argument("chart is empty!");
     }
     return Iterator(nullptr, PREORDER);
 }
@@ -263,23 +229,18 @@ OrgChart::Iterator OrgChart::end() const{
     return end_level_order();
 }
 
-string OrgChart::to_string(){
-    string string_builder;
-    Tree* current = &root;
-    string_builder.append(current->get_name());
-    cout << current->get_name() << endl;
-    while (current->get_next_level_order() != nullptr){
-        string_builder.append(", ");
-        string_builder.append(current->get_next_level_order()->get_name());
-        cout << current->get_next_level_order()->get_name() << endl;
-        current = current->get_next_level_order();
-    }
-    string_builder.append("\n");
-    return string_builder;
+string& OrgChart::Iterator::get_name(){
+    return current->get_name();
+}
+
+string& OrgChart::get_name(){
+    return root.get_name();
 }
 
 ostream& ariel::operator<<(ostream& os, OrgChart& orgchart){
-    string s = orgchart.to_string();
-    os << orgchart.to_string();
+    os << orgchart.get_name();
+    for (auto it = ++orgchart.begin(); it != orgchart.end(); ++it){
+        os << ", " << it->get_name();
+    }
     return os;
 }
