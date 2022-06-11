@@ -1,3 +1,7 @@
+//--------------------------------------------------------
+//  Guy Gur-Arieh  -  System Software B  -  Exercise 5B
+//--------------------------------------------------------
+
 #include <string>
 #include <iostream>
 #include <vector>
@@ -5,10 +9,12 @@
 using namespace std;
 
 namespace ariel{
+    //"Order" enum. used for switch cases
     enum Order{LEVEL_ORDER, REVERSE_ORDER, PREORDER};
 
     class OrgChart{
         private:
+            //"Tree" class. a private class used to store the actual orgchart.
             class Tree{
                 private:
                     string name;
@@ -39,6 +45,7 @@ namespace ariel{
                     char at(unsigned int index) const;
             };
             Tree root;
+            //"Iterator" class. used to iterate the orgchart.
             class Iterator{
                 private:
                     Tree* current;
@@ -53,13 +60,14 @@ namespace ariel{
                     string& get_name();
             };
         public:
+            //the OrgChart objects starts as a single "Tree" object with an empty name and no father.
             OrgChart(): root(Tree("", nullptr)){};
             OrgChart& add_root(const string& name);
             OrgChart& add_sub(const string& father, const string& child);
             Iterator begin_level_order();
             Iterator end_level_order() const;
             Iterator begin_reverse_order();
-            Iterator reverse_order() const; //end_reverse_order
+            Iterator reverse_order() const; //end_reverse_order originaly
             Iterator begin_preorder();
             Iterator end_preorder() const;
             Iterator begin();
