@@ -274,11 +274,6 @@ OrgChart::Iterator OrgChart::end() const{//uses level order
     return end_level_order();
 }
 
-string& OrgChart::Iterator::get_name(){
-    //return the name
-    return current->get_name();
-}
-
 string& OrgChart::get_name(){
     //returns the name
     return root.get_name();
@@ -288,7 +283,7 @@ ostream& ariel::operator<<(ostream& os, OrgChart& orgchart){
     //prints in level order
     os << orgchart.get_name();
     for (auto it = ++orgchart.begin(); it != orgchart.end(); ++it){
-        os << ", " << it->get_name();
+        os << ", " << *it;
     }
     return os;
 }

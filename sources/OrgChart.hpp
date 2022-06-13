@@ -62,7 +62,6 @@ namespace ariel{
                     Iterator& operator++();
                     Tree* operator->();
                     string& operator*();
-                    string& get_name();
             };
         public:
             //the OrgChart objects starts as a single "Tree" object with an empty name and no father.
