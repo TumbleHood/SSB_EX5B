@@ -307,6 +307,7 @@ OrgChart::Tree::Tree(const Tree& tree){ //copy constructor
     prev_level_order = tree.prev_level_order;
     prev_reverse_order = tree.prev_reverse_order;
     prev_preorder = tree.prev_preorder;
+    tree.~Tree();
 }
 
 OrgChart::Tree& OrgChart::Tree::operator=(const Tree& tree){ //copy assignment operator
@@ -328,5 +329,6 @@ OrgChart::Tree& OrgChart::Tree::operator=(Tree&& tree) noexcept{ //move assignme
     prev_level_order = tree.prev_level_order;
     prev_reverse_order = tree.prev_reverse_order;
     prev_preorder = tree.prev_preorder;
+    tree.~Tree();
     return *this;
 }
