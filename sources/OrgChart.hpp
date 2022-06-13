@@ -31,6 +31,11 @@ namespace ariel{
                     Tree(const string& name, Tree* father): name(name), level(0), father(father),
                         next_level_order(nullptr), next_reverse_order(nullptr), next_preorder(nullptr),
                         prev_level_order(nullptr), prev_reverse_order(nullptr), prev_preorder(nullptr){};
+                    ~Tree(); //destructor
+                    Tree(const Tree& tree); //copy constructor
+                    Tree(Tree&& tree) = default; //move constructor
+                    Tree& operator=(const Tree& tree); //copy assignment operator
+                    Tree& operator=(Tree&& tree) noexcept; //move assignment operator
                     void add_sub(const string& child);
                     string& get_name();
                     void set_name(string new_name);

@@ -292,3 +292,46 @@ ostream& ariel::operator<<(ostream& os, OrgChart& orgchart){
     }
     return os;
 }
+
+OrgChart::Tree::~Tree(){ //destructor
+    //every member of the tree (except "this") was made using new.
+    //we go to the next node via level order and preform the destructor on him, until we reach a null pointer.
+
+    Tree* current = next_level_order;
+    delete current;
+}
+
+OrgChart::Tree::Tree(const Tree& tree){ //copy constructor
+    name = tree.name;
+    level = tree.level;
+    children = tree.children;
+    father = tree.father;
+    next_level_order = tree.next_level_order;
+    next_reverse_order = tree.next_reverse_order;
+    next_preorder = tree.next_preorder;
+    prev_level_order = tree.prev_level_order;
+    prev_reverse_order = tree.prev_reverse_order;
+    prev_preorder = tree.prev_preorder;
+}
+
+OrgChart::Tree& OrgChart::Tree::operator=(const Tree& tree){ //copy assignment operator
+    if (this == &tree){
+        return *this;
+    }
+    *this = Tree(tree);
+    return *this;
+}
+
+OrgChart::Tree& OrgChart::Tree::operator=(Tree&& tree) noexcept{ //move assignment operator
+    name = move(tree.name);
+    level = tree.level;
+    children = move(tree.children);
+    father = tree.father;
+    next_level_order = tree.next_level_order;
+    next_reverse_order = tree.next_reverse_order;
+    next_preorder = tree.next_preorder;
+    prev_level_order = tree.prev_level_order;
+    prev_reverse_order = tree.prev_reverse_order;
+    prev_preorder = tree.prev_preorder;
+    return *this;
+}
